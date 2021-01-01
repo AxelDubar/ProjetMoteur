@@ -376,7 +376,7 @@ void MainWidget::resizeGL(int w, int h)
 void MainWidget::paintSceneElementsReccur(Node currentNode,Transform currentTransform){
     program.setUniformValue("model", currentTransform.getMatrix());
     //if(currentNode.name=="lune")
-    geometries->drawGeometry(&program);
+    geometries->drawGeometry(&program,0);
     qInfo("%s ",currentNode.name);
     for(int i=0;i<currentNode.getChilds().size();i++){
 
@@ -396,6 +396,7 @@ void MainWidget::paintSceneElements(Node currentNode){
 
         paintSceneElementsReccur(*currentNode.getChilds().at(i),Transform(currentTransform.apply(currentNode.getChilds().at(i)->transform.getMatrix())));
     }
+    program.setUniformValue("model", currentNode.transform.getMatrix());
 }
 
 
@@ -444,6 +445,7 @@ void MainWidget::paintGL()
     paintSceneElements(world);
 
     // Draw cube geometry
-    geometries->drawGeometry(&program);
+    geometries->drawGeometry(&program,0);
+    geometries->drawPlanGeometry(&program,1);
 
 }

@@ -19,6 +19,7 @@ HEADERS += \
     geometryengine.h
 
 RESOURCES += \
+    model.qrc \
     shaders.qrc \
     textures.qrc
 
