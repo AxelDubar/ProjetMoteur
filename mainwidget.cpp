@@ -54,7 +54,6 @@
 float MainWidget::cameraSpeed=0.05f;
 #include <QMouseEvent>
 #include <QTime>
-
 #include <math.h>
 MainWidget::MainWidget(QWidget *parent,int fps) :
     QOpenGLWidget(parent),
@@ -63,7 +62,7 @@ MainWidget::MainWidget(QWidget *parent,int fps) :
     textureSnow(0),
     textureRock(0),
     textureHeight(0),
-    cameraPos(0.0f,0.0f,7.0f),
+    cameraPos(0.0f,0.0f,2.8f),
     cameraFront(0.0f,0.0f,-1.0f),
     cameraUp(0.0f,1.0f,0.0f),
     cam_orbital(false),
@@ -214,7 +213,7 @@ void MainWidget::keyPressEvent(QKeyEvent *e){
 void MainWidget::timerEvent(QTimerEvent *)
 {
     angle=(angle+1)%360;
-    qInfo("%d",angle);
+
     QMatrix4x4 tmpMat;
 
     //Node *soleil=new Node(&world,"soleil");
@@ -306,6 +305,7 @@ void MainWidget::initializeGL()
 
 
 
+
 }
 
 //! [3]
@@ -352,6 +352,9 @@ void MainWidget::initTextures()
     textureSnow->setMinificationFilter(QOpenGLTexture::Nearest);
     textureSnow->setMagnificationFilter(QOpenGLTexture::Linear);
     textureSnow->setWrapMode(QOpenGLTexture::Repeat);
+
+
+
 }
 //! [4]
 
@@ -373,28 +376,28 @@ void MainWidget::resizeGL(int w, int h)
 //! [5]
 
 
-void MainWidget::paintSceneElementsReccur(Node currentNode,Transform currentTransform){
+void MainWidget::paintSceneElementsReccur(Node currentNode,Transform currentTransform,int numIndex){
     program.setUniformValue("model", currentTransform.getMatrix());
     //if(currentNode.name=="lune")
-    geometries->drawGeometry(&program,0);
-    qInfo("%s ",currentNode.name);
+    geometries->drawGeometry(&program,numIndex);
+
     for(int i=0;i<currentNode.getChilds().size();i++){
 
 
-        paintSceneElementsReccur(*currentNode.getChilds().at(i),Transform(currentTransform.apply(currentNode.getChilds().at(i)->transform.getMatrix())));
+        paintSceneElementsReccur(*currentNode.getChilds().at(i),Transform(currentTransform.apply(currentNode.getChilds().at(i)->transform.getMatrix())),numIndex);
 
     }
 
 }
 
-void MainWidget::paintSceneElements(Node currentNode){
+void MainWidget::paintSceneElements(Node currentNode,int numIndex){
     Transform currentTransform=currentNode.transform;
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    qInfo("%s ",currentNode.name);
+
     for(int i=0;i<currentNode.getChilds().size();i++){
 
-        paintSceneElementsReccur(*currentNode.getChilds().at(i),Transform(currentTransform.apply(currentNode.getChilds().at(i)->transform.getMatrix())));
+        paintSceneElementsReccur(*currentNode.getChilds().at(i),Transform(currentTransform.apply(currentNode.getChilds().at(i)->transform.getMatrix())),numIndex);
     }
     program.setUniformValue("model", currentNode.transform.getMatrix());
 }
@@ -403,7 +406,6 @@ void MainWidget::paintSceneElements(Node currentNode){
 void MainWidget::paintGL()
 {
     // Clear color and depth buffer
-    qInfo("test");
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     textureSnow->bind(0);
@@ -415,7 +417,7 @@ void MainWidget::paintGL()
 
 
     // Calculate model view transformation
-    glPolygonMode(GL_FRONT,GL_LINE);
+    //glPolygonMode(GL_FRONT_AND_BACK,GL_LINE);
     QMatrix4x4 model;
 
     //QImage img=QImage(":/heightmap-1024x1024.png");
@@ -431,6 +433,7 @@ void MainWidget::paintGL()
     // Set modelview-projection matrix
     program.setUniformValue("camera_pos", cameraPos);
     program.setUniformValue("view", view);
+    program.setUniformValue("model", QMatrix4x4());
     program.setUniformValue("projection", projection);
 
 
@@ -442,10 +445,13 @@ void MainWidget::paintGL()
     program.setUniformValue("textureRock", 2);
     program.setUniformValue("textureHeight", 3);
 
-    paintSceneElements(world);
-
+    program.setUniformValue("has_heightmap", false);
+    //paintSceneElements(world,0);
     // Draw cube geometry
-    geometries->drawGeometry(&program,0);
-    geometries->drawPlanGeometry(&program,1);
+    //geometries->drawGeometry(&program,0);
+
+    //program.setUniformValue("has_heightmap", true);
+
+    geometries->drawPlanGeometry(&program,0);
 
 }

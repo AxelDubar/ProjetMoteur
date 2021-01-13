@@ -85,8 +85,8 @@ protected:
     void resizeGL(int w, int h) override;
 
     void paintGL() override;
-    void paintSceneElementsReccur(Node currentNode,Transform currentTransform);
-    void paintSceneElements(Node currentNode);
+    void paintSceneElementsReccur(Node currentNode,Transform currentTransform,int numIndex);
+    void paintSceneElements(Node currentNode,int numIndex);
 
     void initShaders();
     void initTextures();
@@ -96,10 +96,7 @@ private:
     QOpenGLShaderProgram program;
     GeometryEngine *geometries;
 
-    QOpenGLTexture *textureGrass;
-    QOpenGLTexture *textureSnow;
-    QOpenGLTexture *textureRock;
-    QOpenGLTexture *textureHeight;
+    QOpenGLTexture *textureWorm;
 
     QMatrix4x4 projection;
 

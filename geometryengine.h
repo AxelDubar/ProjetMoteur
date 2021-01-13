@@ -61,17 +61,17 @@ public:
     GeometryEngine();
     virtual ~GeometryEngine();
 
-    void drawCubeGeometry(QOpenGLShaderProgram *program);
     void drawPlanGeometry(QOpenGLShaderProgram *program,int numIndex);
     void drawGeometry(QOpenGLShaderProgram *program,int numIndex);
 
     int LoadObject(const std::string filename);
 
 private:
-    void initCubeGeometry();
-    int initPlanGeometry();
+    int initTerrain();
     QVector<QOpenGLBuffer> arrayBufVector;
     QVector<QOpenGLBuffer> indexBufVector;
+    QVector<QVector<int>> matriceTerrain;
+    const int size_x,size_y;
 };
 
 #endif // GEOMETRYENGINE_H

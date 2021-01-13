@@ -5,7 +5,9 @@ TEMPLATE = app
 
 SOURCES += main.cpp \
     GraphNode.cpp \
-    Transform.cpp
+    PerlinNoise.cpp \
+    Transform.cpp \
+    terraingen.cpp
 
 SOURCES += \
     mainwidget.cpp \
@@ -14,9 +16,11 @@ SOURCES += \
 HEADERS += \
     BasicIO.h \
     GraphNode.h \
+    PerlinNoise.h \
     Transform.h \
     mainwidget.h \
-    geometryengine.h
+    geometryengine.h \
+    terraingen.h
 
 RESOURCES += \
     model.qrc \
