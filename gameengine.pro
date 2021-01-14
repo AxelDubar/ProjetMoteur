@@ -7,7 +7,10 @@ SOURCES += main.cpp \
     GraphNode.cpp \
     PerlinNoise.cpp \
     Transform.cpp \
-    terraingen.cpp
+    debris.cpp \
+    physicobject.cpp \
+    terraingen.cpp \
+    worm.cpp
 
 SOURCES += \
     mainwidget.cpp \
@@ -18,9 +21,12 @@ HEADERS += \
     GraphNode.h \
     PerlinNoise.h \
     Transform.h \
+    debris.h \
     mainwidget.h \
     geometryengine.h \
-    terraingen.h
+    physicobject.h \
+    terraingen.h \
+    worm.h
 
 RESOURCES += \
     model.qrc \

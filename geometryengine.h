@@ -58,11 +58,15 @@
 class GeometryEngine : protected QOpenGLFunctions_3_1
 {
 public:
+    QVector<QVector<int>> matriceTerrain;
     GeometryEngine();
     virtual ~GeometryEngine();
 
     void drawPlanGeometry(QOpenGLShaderProgram *program,int numIndex);
     void drawGeometry(QOpenGLShaderProgram *program,int numIndex);
+    int newWorm();
+    void drawWorm(QOpenGLShaderProgram *program,int numIndex);
+    void updateTerrain();
 
     int LoadObject(const std::string filename);
 
@@ -70,7 +74,7 @@ private:
     int initTerrain();
     QVector<QOpenGLBuffer> arrayBufVector;
     QVector<QOpenGLBuffer> indexBufVector;
-    QVector<QVector<int>> matriceTerrain;
+
     const int size_x,size_y;
 };
 

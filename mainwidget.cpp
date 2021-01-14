@@ -50,6 +50,8 @@
 
 #include "mainwidget.h"
 #include "GraphNode.h"
+#include "worm.h"
+#include "debris.h"
 
 float MainWidget::cameraSpeed=0.05f;
 #include <QMouseEvent>
@@ -58,25 +60,21 @@ float MainWidget::cameraSpeed=0.05f;
 MainWidget::MainWidget(QWidget *parent,int fps) :
     QOpenGLWidget(parent),
     geometries(0),
+    textureWorm(0),
     textureGrass(0),
-    textureSnow(0),
-    textureRock(0),
-    textureHeight(0),
     cameraPos(0.0f,0.0f,2.8f),
     cameraFront(0.0f,0.0f,-1.0f),
     cameraUp(0.0f,1.0f,0.0f),
     cam_orbital(false),
     angle(0),
-    angularSpeed(0),
-    soleil(&world,"soleil"),
-    terre(&soleil,"terre"),
-    lune(&terre,"lune")
+    angularSpeed(0)
 
 
 
 
 {
-
+    wormsList.push_back(Worm());
+    wormsList[0].setPosition(300,250);
     cam_rotation.rotate(0.5f,QVector3D(0.0f, 0.0f, 1.0f));
     // Use QBasicTimer because its faster than QTimer
     timer.start(1000.0/(float)fps, this);
@@ -87,10 +85,7 @@ MainWidget::~MainWidget()
     // Make sure the context is current when deleting the texture
     // and the buffers.
     makeCurrent();
-    delete textureHeight;
-    delete textureRock;
-    delete textureGrass;
-    delete textureSnow;
+    delete textureWorm;
     delete geometries;
     doneCurrent();
 }
@@ -100,6 +95,8 @@ void MainWidget::mousePressEvent(QMouseEvent *e)
 {
     // Save mouse press position
     mousePressPosition = QVector2D(e->localPos());
+    qInfo("%f %f",mousePressPosition.x(),mousePressPosition.y());
+    explosion(mousePressPosition.x(),mousePressPosition.y(),15);
 }
 
 void MainWidget::mouseReleaseEvent(QMouseEvent *e)
@@ -126,12 +123,16 @@ void MainWidget::mouseReleaseEvent(QMouseEvent *e)
 
 void MainWidget::keyPressEvent(QKeyEvent *e){
     if(e->key()==Qt::Key_Up){
-        cameraSpeed+=0.01f;
+        //wormsList[0].setPosition(wormsList[0].getPosition().x(),wormsList[0].getPosition().y()-1);
     }
     else if(e->key()==Qt::Key_Down){
-        cameraSpeed-=0.01f;
-        if(cameraSpeed<0)
-            cameraSpeed=0;
+        //wormsList[0].setPosition(wormsList[0].getPosition().x(),wormsList[0].getPosition().y()+1);
+    }
+    else if(e->key()==Qt::Key_Left){
+        //wormsList[0].setPosition(wormsList[0].getPosition().x()-1,wormsList[0].getPosition().y());
+    }
+    else if(e->key()==Qt::Key_Right){
+        //wormsList[0].setPosition();
     }
 
 
@@ -183,106 +184,70 @@ void MainWidget::keyPressEvent(QKeyEvent *e){
         cameraPos-= cameraFront*cameraSpeed;
     }
 
-
-
-    else if(e->key()==Qt::Key_C){
-        cam_orbital=!cam_orbital;
-        if(!cam_orbital){
-            cameraPos=QVector3D(0.0f,0.0f,7.0f);
-            cameraFront=QVector3D(0.0f,0.0f,-1.0f);
-            cameraUp=QVector3D(0.0f,1.0f,0.0f);
-        }
-        else{
-
-            cameraPos=QVector3D(0.0f,0.0f,7.0f);
-            QMatrix4x4 mat=QMatrix4x4();
-            mat.rotate(45.0f,QVector3D(1.0f, 0.0f, 0.0f));
-            cameraPos=cameraPos* mat;
-            QVector3D up = QVector3D(0.0f, 1.0f, 0.0f);
-
-            QVector3D cameraRight = cameraUp.crossProduct(up, cameraFront).normalized();
-
-            cameraUp=cameraUp.crossProduct(cameraFront,cameraRight);
-        }
-    }
-
     update();
 }
 
 
 void MainWidget::timerEvent(QTimerEvent *)
 {
-    angle=(angle+1)%360;
 
-    QMatrix4x4 tmpMat;
+    for(int i=0;i<wormsList.size();i++){
 
-    //Node *soleil=new Node(&world,"soleil");
-    QMatrix4x4 matrixSoleil;
-    soleil.transform.m=QMatrix4x4();
-    soleil.transform.modify(matrixSoleil);
-
-    //Node *terre=new Node(soleil,"terre");
-    terre.transform.m=QMatrix4x4();
-    QMatrix4x4 matrixTerre;
-
-    tmpMat.rotate(23.4f,QVector3D(1.0f,0.0f,0.0f));//tilt
-    matrixTerre=tmpMat*matrixTerre;
-    tmpMat=QMatrix4x4();
-
-    tmpMat.rotate(angle,QVector3D(0.0f,1.0f,0.0f));
-    matrixTerre=tmpMat*matrixTerre;
-    tmpMat=QMatrix4x4();
-
-    tmpMat.translate(QVector3D(3.0f,0.0f,0.0f));
-    matrixTerre=tmpMat*matrixTerre;
-    tmpMat=QMatrix4x4();
-
-    matrixTerre.scale(0.5);//size
-    tmpMat.rotate(angle,QVector3D(0.0f,1.0f,0.0f));
-    matrixTerre=tmpMat*matrixTerre;
-    tmpMat=QMatrix4x4();
-
-    //matrixTerre=otherTerre*matrixTerre;
-    terre.transform.modify(matrixTerre);
-
-    //Node *lune=new Node(terre,"lune");
-    lune.transform.m=QMatrix4x4();
-    QMatrix4x4 matrixLune;
-    matrixLune.rotate(6.5f,QVector3D(1.0f,0.0f,0.0f));
-
-    matrixLune.translate(QVector3D(2.0f,0.0f,0.0f));
-    matrixLune.scale(0.5);
-    matrixLune=tmpMat*matrixLune;
-    lune.transform.modify(matrixLune);
-    // Decrease angular speed (friction)
-    angularSpeed *= 0.99;
-
-    // Stop rotation when speed goes below threshold
-    if (angularSpeed < 0.01) {
-        angularSpeed = 0.0;
-    } else {
-        // Update rotation
-        rotation = QQuaternion::fromAxisAndAngle(rotationAxis, angularSpeed) * rotation;
-
-        // Request an update
-        update();
+        wormsList[i].updatePhysics(geometries->matriceTerrain);
     }
-    if(cam_orbital){
-        cam_rotation=QMatrix4x4();
-        cam_rotation.rotate(cameraSpeed,QVector3D(0.0f, 0.0f, 1.0f));
-        cameraPos= cameraPos*cam_rotation;
 
-        cameraFront=(QVector3D(0.0f,0.0f,0.0f)-cameraPos).normalized();
-        QVector3D up = QVector3D(0.0f, 0.0f, 1.0f);
-
-        QVector3D cameraRight = cameraUp.crossProduct(up, cameraFront).normalized();
-
-        cameraUp=cameraUp.crossProduct(cameraFront,cameraRight);
-        update();
+    for(int i=0;i<debrisList.size();i++){
+        if(debrisList[i].isdead){
+            debrisList.remove(i);
+            i--;
+            continue;
+        }
+        debrisList[i].updatePhysics(geometries->matriceTerrain);
     }
+
     update();
 }
 //! [1]
+
+void MainWidget::explosion(float x,float y,float radius){
+
+    QVector2D explosion_pos=QVector2D(x,y);
+    bool terrain_changed=false;
+    for(int i=0;i<geometries->matriceTerrain.size();i++){
+        for(int j=0;j<geometries->matriceTerrain[i].size();j++){
+            if(geometries->matriceTerrain[i][j]==1){
+                QVector2D delta=QVector2D(i,j)-explosion_pos;
+                float distance=sqrt(delta.x()*delta.x()+delta.y()*delta.y());
+                if(distance<radius){
+                        geometries->matriceTerrain[i][j]=0;
+                        terrain_changed=true;
+                }
+            }
+        }
+    }
+
+    if(terrain_changed){
+        geometries->updateTerrain();
+    }
+
+    for(int i=0;i<wormsList.size();i++){
+        QVector2D delta=wormsList[i].position-explosion_pos;
+        float distance=sqrt(delta.x()*delta.x()+delta.y()*delta.y());
+
+        if(distance<radius){
+            wormsList[i].velocity = (delta/distance) *radius/6.0f;
+            wormsList[i].stable=false;
+        }
+
+    }
+
+
+    for(int i=0;i<15;i++){
+        debrisList.push_back(Debris());
+        debrisList[debrisList.size()-1].setPosition(explosion_pos);
+    }
+}
+
 
 void MainWidget::initializeGL()
 {
@@ -333,25 +298,17 @@ void MainWidget::initShaders()
 void MainWidget::initTextures()
 {
     // Load cube.png image
-    textureHeight = new QOpenGLTexture(QImage(":/heightmap-1024x1024.png").mirrored());
-    textureHeight->setMinificationFilter(QOpenGLTexture::Nearest);
-    textureHeight->setMagnificationFilter(QOpenGLTexture::Linear);
-    textureHeight->setWrapMode(QOpenGLTexture::Repeat);
+    textureWorm = new QOpenGLTexture(QImage(":/worm.png").mirrored());
+    textureWorm->setMinificationFilter(QOpenGLTexture::Nearest);
+    textureWorm->setMagnificationFilter(QOpenGLTexture::Linear);
+    textureWorm->setWrapMode(QOpenGLTexture::Repeat);
+
 
     textureGrass = new QOpenGLTexture(QImage(":/grass.png").mirrored());
-    textureGrass->setMinificationFilter(QOpenGLTexture::Nearest);
-    textureGrass->setMagnificationFilter(QOpenGLTexture::Linear);
-    textureGrass->setWrapMode(QOpenGLTexture::Repeat);
+    textureGrass ->setMinificationFilter(QOpenGLTexture::Nearest);
+    textureGrass ->setMagnificationFilter(QOpenGLTexture::Linear);
+    textureGrass ->setWrapMode(QOpenGLTexture::Repeat);
 
-    textureRock = new QOpenGLTexture(QImage(":/rock.png").mirrored());
-    textureRock->setMinificationFilter(QOpenGLTexture::Nearest);
-    textureRock->setMagnificationFilter(QOpenGLTexture::Linear);
-    textureRock->setWrapMode(QOpenGLTexture::Repeat);
-
-    textureSnow = new QOpenGLTexture(QImage(":/snowrocks.png").mirrored());
-    textureSnow->setMinificationFilter(QOpenGLTexture::Nearest);
-    textureSnow->setMagnificationFilter(QOpenGLTexture::Linear);
-    textureSnow->setWrapMode(QOpenGLTexture::Repeat);
 
 
 
@@ -376,59 +333,55 @@ void MainWidget::resizeGL(int w, int h)
 //! [5]
 
 
-void MainWidget::paintSceneElementsReccur(Node currentNode,Transform currentTransform,int numIndex){
-    program.setUniformValue("model", currentTransform.getMatrix());
-    //if(currentNode.name=="lune")
-    geometries->drawGeometry(&program,numIndex);
 
-    for(int i=0;i<currentNode.getChilds().size();i++){
-
-
-        paintSceneElementsReccur(*currentNode.getChilds().at(i),Transform(currentTransform.apply(currentNode.getChilds().at(i)->transform.getMatrix())),numIndex);
-
-    }
-
-}
-
-void MainWidget::paintSceneElements(Node currentNode,int numIndex){
-    Transform currentTransform=currentNode.transform;
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-
-    for(int i=0;i<currentNode.getChilds().size();i++){
-
-        paintSceneElementsReccur(*currentNode.getChilds().at(i),Transform(currentTransform.apply(currentNode.getChilds().at(i)->transform.getMatrix())),numIndex);
-    }
-    program.setUniformValue("model", currentNode.transform.getMatrix());
-}
-
-
+bool even=true;;
 void MainWidget::paintGL()
 {
     // Clear color and depth buffer
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-    textureSnow->bind(0);
-    textureGrass->bind(1);
-    textureRock->bind(2);
-    textureHeight->bind(3);
-
-//! [6]
-
-
-    // Calculate model view transformation
-    //glPolygonMode(GL_FRONT_AND_BACK,GL_LINE);
-    QMatrix4x4 model;
-
-    //QImage img=QImage(":/heightmap-1024x1024.png");
-    //qInfo("%lf",img.pixel(5,5));
-    model.rotate(rotation);
-    //model.scale(0.3f);
-
-
-
     QMatrix4x4 view;
     view.lookAt(cameraPos, cameraPos + cameraFront, cameraUp);
+
+
+    textureWorm->bind(1);
+    QMatrix4x4 model;
+    for(int i=0;i<wormsList.size();i++){
+        model=QMatrix4x4();
+        model.translate(QVector3D(wormsList[i].getPosition().x(),wormsList[i].getPosition().y(),0.0));
+        model.scale(0.5f);
+
+        // Set modelview-projection matrix
+        program.setUniformValue("camera_pos", cameraPos);
+        program.setUniformValue("view", view);
+        program.setUniformValue("model", model);
+        program.setUniformValue("projection", projection);
+
+        // Use texture unit 0 which contains cube.png
+        program.setUniformValue("textureTerrain", 1);
+        geometries->drawWorm(&program,1);
+    }
+textureGrass->bind(1);
+    for(int i=0;i<debrisList.size();i++){
+        model=QMatrix4x4();
+        model.translate(QVector3D(debrisList[i].getPosition().x(),debrisList[i].getPosition().y(),0.0));
+        model.rotate(atan2(debrisList[i].velocity.y(),debrisList[i].velocity.x())*180/3.14,QVector3D(0.0,0.0,1.0));
+        model.scale(0.1f);
+
+
+
+        // Set modelview-projection matrix
+        program.setUniformValue("camera_pos", cameraPos);
+        program.setUniformValue("view", view);
+        program.setUniformValue("model", model);
+        program.setUniformValue("projection", projection);
+
+        // Use texture unit 0 which contains cube.png
+        program.setUniformValue("textureTerrain", 1);
+        geometries->drawWorm(&program,1);
+    }
+
+
+
 
     // Set modelview-projection matrix
     program.setUniformValue("camera_pos", cameraPos);
@@ -440,17 +393,7 @@ void MainWidget::paintGL()
 //! [6]
 
     // Use texture unit 0 which contains cube.png
-    program.setUniformValue("textureSnow", 0);
-    program.setUniformValue("textureGrass", 1);
-    program.setUniformValue("textureRock", 2);
-    program.setUniformValue("textureHeight", 3);
-
-    program.setUniformValue("has_heightmap", false);
-    //paintSceneElements(world,0);
-    // Draw cube geometry
-    //geometries->drawGeometry(&program,0);
-
-    //program.setUniformValue("has_heightmap", true);
+    program.setUniformValue("textureWorm", 0);
 
     geometries->drawPlanGeometry(&program,0);
 

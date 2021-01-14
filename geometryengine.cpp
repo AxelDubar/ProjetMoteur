@@ -55,6 +55,7 @@
 #include <QVector2D>
 #include <QImage>
 #include <QVector3D>
+#include <time.h>
 #include <QOpenGLTexture>
 #include "BasicIO.h"
 
@@ -83,6 +84,7 @@ GeometryEngine::GeometryEngine():size_x(1024),size_y(512)
 
 
     initTerrain();
+    newWorm();
 }
 
 GeometryEngine::~GeometryEngine()
@@ -104,8 +106,8 @@ int GeometryEngine::initTerrain()
 
     TerrainGen generator;
     qInfo("debut terrain");
-
-    matriceTerrain=generator.generateTerrain(size_y,size_x,2);
+    srand(time(NULL));
+    matriceTerrain=generator.generateTerrain(size_y,size_x,rand());
 
     qInfo("good");
 
@@ -113,10 +115,10 @@ int GeometryEngine::initTerrain()
     QVector<GLushort> indices;
 
 
-    vertices.push_back({QVector3D(-1.5,1.0,0.0),QVector2D(1.0f,1.0f)});
-    vertices.push_back({QVector3D(1.5,1.0,0.0),QVector2D(0.0f,1.0f)});
-    vertices.push_back({QVector3D(1.5,-1.0,0.0),QVector2D(0.0f,0.0f)});
-    vertices.push_back({QVector3D(-1.5,-1.0,0.0),QVector2D(1.0f,0.0f)});
+    vertices.push_back({QVector3D(-1.5,1.0,0.0),QVector2D(0.0f,1.0f)});
+    vertices.push_back({QVector3D(1.5,1.0,0.0),QVector2D(1.0f,1.0f)});
+    vertices.push_back({QVector3D(1.5,-1.0,0.0),QVector2D(1.0f,0.0f)});
+    vertices.push_back({QVector3D(-1.5,-1.0,0.0),QVector2D(0.0f,0.0f)});
 
     indices.push_back(0);
     indices.push_back(1);
@@ -150,13 +152,11 @@ int GeometryEngine::initTerrain()
     qInfo("%d",arrayBuf.size());
 
 
-    QImage imagen(size_x,size_y, QImage::Format_RGB888);
-    QRgb value;
+    QImage imagen(size_x,size_y, QImage::Format_RGBA8888);
    for(int i=0;i<size_x;++i){
        for(int j=0;j<size_y;++j){
-           value=qRgb(matriceTerrain[i][j]*75,matriceTerrain[i][j]*255,matriceTerrain[i][j]*75);
            //qInfo("%d %d %d",i,j,matriceTerrain[i][j]);
-           imagen.setPixel(i,j, value);
+           imagen.setPixel(i,j, qRgba(matriceTerrain[i][j]*25,matriceTerrain[i][j]*255,matriceTerrain[i][j]*25,matriceTerrain[i][j]*255));
        }
    }
 imagen.save("image.png");
@@ -168,6 +168,22 @@ imagen.save("image.png");
     init=true;
     return arrayBufVector.size()-1;
 }
+
+void GeometryEngine::updateTerrain(){
+    QImage imagen(size_x,size_y, QImage::Format_RGBA8888);
+   for(int i=0;i<size_x;++i){
+       for(int j=0;j<size_y;++j){
+           //qInfo("%d %d %d",i,j,matriceTerrain[i][j]);
+           imagen.setPixel(i,j, qRgba(matriceTerrain[i][j]*25,matriceTerrain[i][j]*255,matriceTerrain[i][j]*25,matriceTerrain[i][j]*255));
+       }
+   }
+imagen.save("image.png");
+   textureTerrain = new QOpenGLTexture(imagen.mirrored());
+   textureTerrain->setMinificationFilter(QOpenGLTexture::Nearest);
+   textureTerrain->setMagnificationFilter(QOpenGLTexture::Linear);
+   textureTerrain->setWrapMode(QOpenGLTexture::Repeat);
+}
+
 
 
 int GeometryEngine::LoadObject(const std::string filename){
@@ -208,43 +224,58 @@ int GeometryEngine::LoadObject(const std::string filename){
     return arrayBufVector.size()-1;
 }
 
+
+int GeometryEngine::newWorm(){
+
+    std::vector<VertexData> vertices;
+    std::vector<GLushort> indices;
+
+    vertices.push_back({QVector3D(-0.05,0.05,0.0),QVector2D(1.0f,1.0f)});
+    vertices.push_back({QVector3D(0.05,0.05,0.0),QVector2D(0.0f,1.0f)});
+    vertices.push_back({QVector3D(0.05,-0.05,0.0),QVector2D(0.0f,0.0f)});
+    vertices.push_back({QVector3D(-0.05,-0.05,0.0),QVector2D(1.0f,0.0f)});
+
+    indices.push_back(0);
+    indices.push_back(1);
+    indices.push_back(2);
+
+    indices.push_back(0);
+    indices.push_back(2);
+    indices.push_back(3);
+
+
+//! [1]
+    QOpenGLBuffer arrayBuf;
+    QOpenGLBuffer indexBuf(QOpenGLBuffer::IndexBuffer);
+    arrayBuf.create();
+    indexBuf.create();
+
+
+    // Transfer vertex data to VBO 0
+    arrayBuf.bind();
+    arrayBuf.allocate(vertices.data(), vertices.size() * sizeof(VertexData));
+
+    // Transfer index data to VBO 1
+    indexBuf.bind();
+    indexBuf.allocate(indices.data(), indices.size() * sizeof(GLushort));
+
+    arrayBufVector.push_back(arrayBuf);
+    indexBufVector.push_back(indexBuf);
+    qInfo("fin init");
+    return arrayBufVector.size()-1;
+}
+
+
 //! [2]
 
 
-
-
-void GeometryEngine::drawPlanGeometry(QOpenGLShaderProgram *program,int numIndex)
+void GeometryEngine::drawWorm(QOpenGLShaderProgram *program,int numIndex)
 {
-    //glPointSize(10.0f);
     // Tell OpenGL which VBOs to use
     arrayBufVector[numIndex].bind();
     indexBufVector[numIndex].bind();
-   // qInfo("%d",arrayBufVector[numIndex].size());
-    // Offset for position
+
     quintptr offset = 0;
-
-
-
-  /*  QVector<float> matrice;
-    for(int i=0;i<size_x;i++){
-        for(int j=0;j<size_y;j++){
-            if(matriceTerrain[i][j]==0){
-                matrice.push_back(0.0);matrice.push_back(0.0);matrice.push_back(0.0);
-            }
-            else{
-                matrice.push_back(1.0);matrice.push_back(1.0);matrice.push_back(1.0);
-            }
-        }
-    }
-    glTexImage2D(GL_TEXTURE_2D,0,GL_RED,size_x,size_y,0,GL_RED,GL_FLOAT,matrice.data());
-    program->setUniformValue("matriceTerrain",4);*/
-
-
-if(init){
-    qInfo("passe par la");
-   textureTerrain->bind(4);
-   program->setUniformValue("textureTerrain", 4);
-
 
     // Tell OpenGL programmable pipeline how to locate vertex position data
     int vertexLocation = program->attributeLocation("a_position");
@@ -261,7 +292,42 @@ if(init){
 
     // Draw cube geometry using indices from VBO 1
     glDrawElements(GL_TRIANGLES, indexBufVector[numIndex].size(), GL_UNSIGNED_SHORT, 0);
+
 }
+
+void GeometryEngine::drawPlanGeometry(QOpenGLShaderProgram *program,int numIndex)
+{
+    // Tell OpenGL which VBOs to use
+    arrayBufVector[numIndex].bind();
+    indexBufVector[numIndex].bind();
+    quintptr offset = 0;
+
+    if(init){
+       textureTerrain->bind(1);
+       program->setUniformValue("textureTerrain", 1);
+
+
+        // Tell OpenGL programmable pipeline how to locate vertex position data
+        int vertexLocation = program->attributeLocation("a_position");
+        program->enableAttributeArray(vertexLocation);
+        program->setAttributeBuffer(vertexLocation, GL_FLOAT, offset, 3, sizeof(VertexData));
+
+        // Offset for texture coordinate
+        offset += sizeof(QVector3D);
+
+        // Tell OpenGL programmable pipeline how to locate vertex texture coordinate data
+        int texcoordLocation = program->attributeLocation("a_texcoord");
+        program->enableAttributeArray(texcoordLocation);
+        program->setAttributeBuffer(texcoordLocation, GL_FLOAT, offset, 2, sizeof(VertexData));
+
+        // Draw cube geometry using indices from VBO 1
+        glDrawElements(GL_TRIANGLES, indexBufVector[numIndex].size(), GL_UNSIGNED_SHORT, 0);
+
+        arrayBufVector[numIndex].release();
+        indexBufVector[numIndex].release();
+
+    }
+
 }
 
 void GeometryEngine::drawGeometry(QOpenGLShaderProgram *program,int numIndex)

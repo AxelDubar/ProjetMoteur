@@ -318,13 +318,6 @@ QVector<QVector<int>> TerrainGen::generateTerrain(int cols,int rows,unsigned int
 
 
     qInfo("debut dilatation erosion");
-    terrain= dilatation(terrain,rows,cols);
-    terrain= erosion(terrain,rows,cols);
-
-    terrain= dilatation(terrain,rows,cols);
-    terrain= dilatation(terrain,rows,cols);
-    terrain= erosion(terrain,rows,cols);
-    terrain= erosion(terrain,rows,cols);
 
     
     terrain= dilatation(terrain,rows,cols);
@@ -333,17 +326,7 @@ QVector<QVector<int>> TerrainGen::generateTerrain(int cols,int rows,unsigned int
     terrain= dilatation(terrain,rows,cols);
     terrain= dilatation(terrain,rows,cols);
     terrain= erosion(terrain,rows,cols);
-    qInfo("fin dilatation erosion");
 
-    //terrain= erosion(terrain,rows,cols);
-    //terrain= erosion(terrain,rows,cols);
-    //terrain= erosion(terrain,rows,cols);
-  //  terrain= erosion(terrain,rows,cols);
-    //terrain= erosion(terrain,rows,cols);
-    /*terrain= dilatation(terrain,rows,cols);
-    terrain= erosion(terrain,rows,cols);
-    terrain= dilatation(terrain,rows,cols);
-    terrain= erosion(terrain,rows,cols);*/
 
     qInfo("fin generation");
     return terrain;

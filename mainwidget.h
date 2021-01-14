@@ -53,6 +53,7 @@
 
 #include "geometryengine.h"
 #include "GraphNode.h"
+#include "physicobject.h"
 
 #include <QOpenGLWidget>
 #include <QOpenGLFunctions_3_1>
@@ -85,8 +86,9 @@ protected:
     void resizeGL(int w, int h) override;
 
     void paintGL() override;
-    void paintSceneElementsReccur(Node currentNode,Transform currentTransform,int numIndex);
-    void paintSceneElements(Node currentNode,int numIndex);
+
+
+    void explosion(float x,float y,float radius);
 
     void initShaders();
     void initTextures();
@@ -97,6 +99,7 @@ private:
     GeometryEngine *geometries;
 
     QOpenGLTexture *textureWorm;
+    QOpenGLTexture *textureGrass;
 
     QMatrix4x4 projection;
 
@@ -115,10 +118,9 @@ private:
     qreal angularSpeed;
     QQuaternion rotation;
 
-    Node world;
-    Node soleil;
-    Node terre;
-    Node lune;
+    QVector<PhysicObject> wormsList;
+    QVector<PhysicObject> debrisList;
+
 
 };
 
