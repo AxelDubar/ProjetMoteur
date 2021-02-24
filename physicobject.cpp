@@ -5,6 +5,7 @@ PhysicObject::PhysicObject()
 
     velocity=QVector2D(0,0);
 
+
 }
 
 void PhysicObject::setPosition(float x,float y){
